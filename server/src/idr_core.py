@@ -15,9 +15,9 @@ import numpy as np
 import pandas as pd
 from pathlib import Path
 
-from preprocess import (load_raw, split_sessions, EARTH_RADIUS_M,
+from TrajectoryPredictor.server.src.preprocess import (load_raw, split_sessions, EARTH_RADIUS_M,
                         fix_speed_units_vfile, _fix_speed_units)
-from preprocess_speed import resample, feature_names, window_features
+from TrajectoryPredictor.server.src.preprocess_speed import resample, feature_names, window_features
 
 FS = 10.0
 WINDOW_S, HOP_S = 2.0, 0.5
@@ -166,8 +166,8 @@ def model_speed_track2(rs, model, mu, sd, cols, anchor_idx, lo, hi, v0, hop_s=1.
     RESIDUAL from the speed known at the outage start, so v0 and the elapsed
     time are inputs, not context.
     """
-    from preprocess_speed2 import SCALES, feature_names2
-    from preprocess_speed import window_features
+    from src.preprocess_speed2 import SCALES, feature_names2
+    from TrajectoryPredictor.server.src.preprocess_speed import window_features
     lax = rs["accel_x"].values - rs["grav_x"].values
     lay = rs["accel_y"].values - rs["grav_y"].values
     laz = rs["accel_z"].values - rs["grav_z"].values
