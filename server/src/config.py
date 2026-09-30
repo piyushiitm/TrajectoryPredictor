@@ -39,10 +39,8 @@ HOLDOUT = "t03_other"
 
 def recording(name):
     """Path to a recording, whether it shipped with the repo or was uploaded."""
-    # data/raw/ holds the older, pre-rename recordings (e.g. a111, k11) that the
-    # replay server also lists; without it the heading head silently skipped them.
-    for d in (DATA, UPLOADS, ROOT / "data" / "raw", ROOT / "data" / "raw" / "uploads"):
+    for d in (DATA, UPLOADS):
         p = d / f"{name}.csv"
         if p.exists():
             return p
-    raise FileNotFoundError(f"no recording named {name} in {DATA}, {UPLOADS} or data/raw")
+    raise FileNotFoundError(f"no recording named {name} in {DATA} or {UPLOADS}")
