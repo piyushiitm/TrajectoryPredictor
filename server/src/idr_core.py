@@ -15,9 +15,9 @@ import numpy as np
 import pandas as pd
 from pathlib import Path
 
-from TrajectoryPredictor.server.src.preprocess import (load_raw, split_sessions, EARTH_RADIUS_M,
+from preprocess import (load_raw, split_sessions, EARTH_RADIUS_M,
                         fix_speed_units_vfile, _fix_speed_units)
-from TrajectoryPredictor.server.src.preprocess_speed import resample, feature_names, window_features
+from preprocess_speed import resample, feature_names, window_features
 
 FS = 10.0
 WINDOW_S, HOP_S = 2.0, 0.5
@@ -166,8 +166,12 @@ def model_speed_track2(rs, model, mu, sd, cols, anchor_idx, lo, hi, v0, hop_s=1.
     RESIDUAL from the speed known at the outage start, so v0 and the elapsed
     time are inputs, not context.
     """
-    from src.preprocess_speed2 import SCALES, feature_names2
-    from TrajectoryPredictor.server.src.preprocess_speed import window_features
+    # preprocess_speed2 never existed in this repo; train_full's SCALES/names()
+    # build the identical per-scale feature vector plus [v0, elapsed], which is
+    # exactly what this function zips feats against below.
+    from train_full import SCALES
+    from train_full import names as feature_names2
+    from preprocess_speed import window_features
     lax = rs["accel_x"].values - rs["grav_x"].values
     lay = rs["accel_y"].values - rs["grav_y"].values
     laz = rs["accel_z"].values - rs["grav_z"].values

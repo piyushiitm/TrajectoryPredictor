@@ -23,7 +23,7 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(ROOT / "src"))
+sys.path.insert(0, str(Path(__file__).resolve().parent / "src"))
 UPLOADS = ROOT / "data" / "raw" / "uploads"
 UPLOADS.mkdir(parents=True, exist_ok=True)
 
@@ -34,21 +34,45 @@ from idr_core import (load_session_gps, genuine_fixes, gyro_matrix, calibrate_ya
                       yaw_rate_from_cal, model_speed_track2, wrap, FS)
 from sim_compass_pipeline import compass, tau_for
 
-HEAD_DIR = ROOT / "results" / "models" / "v3" / "gyroc"
+
+class TFLiteModel:
+    """Wraps a .tflite interpreter behind the same .predict() the engine
+    expects from a Keras model -- no .keras checkpoints ship in the repo
+    (gitignored as TFLite build artefacts), only the exported .tflite."""
+
+    def __init__(self, path):
+        self._interp = tf.lite.Interpreter(model_path=str(path))
+        self._interp.allocate_tensors()
+        self._in = self._interp.get_input_details()[0]
+        self._out = self._interp.get_output_details()[0]
+
+    def predict(self, X, batch_size=None, verbose=0):
+        X = np.asarray(X, dtype=self._in["dtype"])
+        if tuple(self._interp.get_input_details()[0]["shape"]) != X.shape:
+            self._interp.resize_tensor_input(self._in["index"], X.shape)
+            self._interp.allocate_tensors()
+        self._interp.set_tensor(self._in["index"], X)
+        self._interp.invoke()
+        return self._interp.get_tensor(self._out["index"])
+
+
+# HEAD_DIR corrects the gyro heading (h["mlgyro"] below), so it's the "gyro"
+# baseline head, not "fused" -- see train_heading_correction.py's BASE dict.
+HEAD_DIR = ROOT / "models" / "heading_correction_gyro"
 
 # Two speed heads, the same pair the phone carries.
 #   tuned    the 25 bike recordings only -- sharper on this bike
 #   general  those plus the IO-VNBD car pool -- holds up on other vehicles
-SPEED_DIRS = {"tuned": ROOT / "results" / "models" / "v3" / "speed_bikeonly",
-              "general": ROOT / "results" / "models" / "v3" / "speed"}
+SPEED_DIRS = {"tuned": ROOT / "models" / "speed_tuned",
+              "general": ROOT / "models" / "speed_general"}
 SPEED = {}
 for _k, _d in SPEED_DIRS.items():
     _st = json.load(open(_d / "norm_stats.json"))
     SPEED[_k] = (np.array(_st["mean"]), np.array(_st["std"]), _st["input_cols"],
-                 tf.keras.models.load_model(_d / "model.keras"))
+                 TFLiteModel(_d / "model.tflite"))
 _hs = json.load(open(HEAD_DIR / "norm_stats.json"))
 HMU, HSD = np.array(_hs["mean"]), np.array(_hs["std"])
-HNET = tf.keras.models.load_model(HEAD_DIR / "model.keras")
+HNET = TFLiteModel(HEAD_DIR / "model.tflite")
 
 # Recordings the speed heads trained on. Their numbers are optimistic and the UI
 # says so: a model scored on its own training data is not evidence of anything.
