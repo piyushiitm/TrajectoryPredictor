@@ -26,6 +26,7 @@ Evaluated two ways, as requested: leave-one-recording-out (honest, no shared
 ride) and held-out tails (optimistic, shares the ride and its magnetic
 surroundings). The gap between them is informative in itself.
 """
+import config
 import json
 import sys
 from pathlib import Path
@@ -37,8 +38,8 @@ sys.path.insert(0, str(Path(__file__).parent))
 from run_full_job import log
 from idr_core import load_session_gps, wrap, FS
 
-MOUNTS = ["mount_a", "mount_b", "mount_c", "mount_d", "mount_e"]
-UNSEEN = ["trip1", "trip11", "pocket_e"]
+MOUNTS = ["s01_mount", "s02_mount", "s03_mount", "s04_mount", "s05_mount"]
+UNSEEN = ["t03_other", "s11_bike", "s05_pocket"]
 TAIL = 0.10
 GAP_S = 150.0
 deg = np.rad2deg
@@ -46,7 +47,7 @@ deg = np.rad2deg
 
 def build(nm, hop=5):
     """Per-sample magnetic features and the compass's own heading error."""
-    p = Path(f"data/raw/{nm}.csv")
+    p = config.recording(nm)
     if not p.exists():
         return None
     rs, truth = load_session_gps(p)
@@ -219,7 +220,7 @@ def main():
         pk = m.predict((r[0] - mu) / sd, batch_size=16384, verbose=0).ravel()
         report(r[1], pk, nm, len(r[0]))
 
-    out = Path("results/models/compass_filter")
+    out = config.MODELS / ("compass_filter")
     out.mkdir(parents=True, exist_ok=True)
     m.save(out / "compass.keras")
     json.dump({"cols": COLS, "mean": mu.tolist(), "std": sd.tolist()},

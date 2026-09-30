@@ -24,6 +24,7 @@ EVALUATION
 Per-recording features are cached to data/processed/cache/, so the pools reuse
 one build rather than repeating the expensive part five times.
 """
+import config
 import json
 import sys
 import time
@@ -37,17 +38,17 @@ from run_head_correct import build_head
 from run_compass_filter import build as build_mag
 from idr_core import load_session_gps, wrap
 
-CACHE = Path("data/processed/cache")
+CACHE = config.CACHE
 CACHE.mkdir(parents=True, exist_ok=True)
 T0 = time.time()
 
 MOUNTS = [f"mount_{c}" for c in "abcdefghi"]
 POCKETS = [f"pocket_{c}" for c in "abcdefghi"]
 HANDS = [f"hand_{c}" for c in "abcd"]
-OLD = ["trip11", "trip12", "trip13"]
+OLD = ["s11_bike", "s12_bike", "s13_bike"]
 NEW = [f"mount_{c}" for c in "fghi"] + [f"pocket_{c}" for c in "fghi"] + HANDS
 ALLB = MOUNTS + POCKETS + HANDS + OLD
-HOLD = "trip1"                     # never in any pool
+HOLD = "t03_other"                     # never in any pool
 
 POOLS = {"NEW": NEW, "MOUNT": MOUNTS, "HAND": HANDS, "ALL": ALLB}
 HEADS = ["speed", "velvec", "gyroc", "magc"]
@@ -68,7 +69,7 @@ def cached(nm, head):
         return z["X"], z["Y"], z["T"]
     out = None
     if head in ("speed", "velvec"):
-        p = Path(f"data/raw/{nm}.csv")
+        p = config.recording(nm)
         if not p.exists():
             return None
         rs, truth = load_session_gps(p)
@@ -254,7 +255,7 @@ def main():
     log("")
     log("=" * 86)
     log(f"{'head':7s} {'pool':8s} {'rec':>3s} {'rows':>8s} {'LORO':>9s} {'TAILS':>9s}"
-        f" {'trip1':>9s} {'gap':>7s}")
+        f" {'t03_other':>9s} {'gap':>7s}")
     log("=" * 86)
     for h, p, nr, nx, lo, ta, un in results:
         log(f"{h:7s} {p:8s} {nr:3d} {nx:8d} {lo:+9.1f} {ta:+9.1f} {un:+9.1f} {ta-lo:+7.1f}")
@@ -262,7 +263,7 @@ def main():
     log("LORO is the honest number. A large TAILS-minus-LORO gap means the model")
     log("memorised the ride rather than learning a transferable rule.")
     json.dump([{"head": h, "pool": p, "recordings": nr, "rows": int(nx),
-                "loro": float(lo), "tails": float(ta), "trip1": float(un)}
+                "loro": float(lo), "tails": float(ta), "t03_other": float(un)}
                for h, p, nr, nx, lo, ta, un in results],
               open("results/logs/matrix_all.json", "w"), indent=1)
     log("DONE")

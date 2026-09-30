@@ -14,6 +14,7 @@ Both are validated leave-one-recording-out, which is the only number worth
 trusting here; a held-out tail shares the ride and has overstated every heading
 result so far by 8-51 points.
 """
+import config
 import json
 import sys
 from pathlib import Path

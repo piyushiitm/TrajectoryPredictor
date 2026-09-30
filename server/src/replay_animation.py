@@ -16,6 +16,7 @@ GNSS afterwards -- a full-length blackout, not a rolling window.
 
 Writes an animated GIF, plus a PNG of the final frame.
 """
+import config
 import argparse
 import json
 import sys
@@ -34,9 +35,9 @@ from idr_core import (load_session_gps, genuine_fixes, gyro_matrix, calibrate_ya
                       yaw_rate_from_cal, truth_xy, model_speed_track2, wrap, FS)
 
 ap = argparse.ArgumentParser()
-ap.add_argument("--trip", default="trip1")
-ap.add_argument("--speed-model", default="results/models/v3/speed")
-ap.add_argument("--head-model", default="results/models/v3/gyroc")
+ap.add_argument("--trip", default="t03_other")
+ap.add_argument("--speed-model", default=str(config.SPEED_GENERAL))
+ap.add_argument("--head-model", default=str(config.HEADING))
 ap.add_argument("--cal-s", type=float, default=300.0)
 ap.add_argument("--seconds", type=float, default=0.0, help="0 = to the end")
 ap.add_argument("--fps", type=int, default=30)

@@ -17,6 +17,7 @@ up as worse POSITION, or does the fusion absorb it?
 trip11 is the honest test: never in the filter's training pool. mount_e was,
 so its numbers are optimistic and are marked.
 """
+import config
 import json
 import sys
 from pathlib import Path
@@ -34,8 +35,8 @@ B_TOL = 0.15
 import os
 SPEED_MODEL = os.environ.get("IDR_SPEED", "results/models/mount_only")
 FILTER_MODEL = "results/models/compass_filter"
-TRIPS = sys.argv[1:] or ["trip11", "mount_e", "trip1"]
-LEAKED = {"mount_e"}
+TRIPS = sys.argv[1:] or ["s11_bike", "s05_mount", "t03_other"]
+LEAKED = {"s05_mount"}
 
 
 def compass(path, rs, filt=None, fmu=None, fsd=None):
@@ -114,7 +115,7 @@ def main():
     log(f"speed model {SPEED_MODEL}   compass filter {FILTER_MODEL}")
 
     for T in TRIPS:
-        p = f"data/raw/{T}.csv"
+        p = str(config.recording(T))
         if not Path(p).exists():
             log(f"{T}: missing"); continue
         rs, truth = load_session_gps(p)

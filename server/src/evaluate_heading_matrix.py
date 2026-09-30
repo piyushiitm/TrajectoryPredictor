@@ -14,6 +14,7 @@ Map matching is HMM/Viterbi (Newson & Krumm) against the offline OSM extract,
 and its own trust gate can reject a match, in which case the unsnapped track
 is kept -- a confident snap to the wrong road costs more than it saves.
 """
+import config
 import json, sys
 from pathlib import Path
 import numpy as np, pandas as pd, tensorflow as tf
@@ -24,7 +25,7 @@ from idr_core import (load_session_gps, genuine_fixes, gyro_matrix, calibrate_ya
                       EARTH_RADIUS_M)
 
 import os
-_MD = os.environ.get("IDR_MODEL", "results/models/app_bike")
+_MD = os.environ.get("IDR_MODEL", str(config.SPEED_GENERAL))
 _st = json.load(open(f"{_MD}/norm_stats.json"))
 _MU = np.array(_st["mean"]); _SD = np.array(_st["std"]); _COLS = _st["input_cols"]
 _NET = tf.keras.models.load_model(f"{_MD}/speed_model.keras")
@@ -66,7 +67,7 @@ def main():
     for T in sys.argv[1:]:
         p = f"data/raw/tests/{T}.csv"
         if not Path(p).exists():
-            p = f"data/raw/{T}.csv"
+            p = str(config.recording(T))
         rs, truth = load_session_gps(p)
         if rs is None:
             print(f"{T}: unusable", flush=True); continue

@@ -19,6 +19,7 @@ HARD-IRON-CORRECTED magnetometer rather than GPS bearing. The compass is
 drift-free, which is what the gyro is not, and its offset is anchored once at
 the start of the outage from the last GPS fix -- nothing during the blackout.
 """
+import config
 import json, sys, time
 from pathlib import Path
 import numpy as np, pandas as pd
@@ -153,10 +154,10 @@ def main():
         except Exception as ex:
             log(f"comma unavailable: {ex}")
         trips = [f"trip{i}" for i in range(1, 14)] + \
-                ["mount_a", "mount_b", "pocket_a", "pocket_b"]
+                ["s01_mount", "s02_mount", "s01_pocket", "s02_pocket"]
         log("phone trips")
         for nm in trips:
-            p = Path(f"data/raw/{nm}.csv")
+            p = config.recording(nm)
             if not p.exists():
                 continue
             try:
@@ -226,15 +227,15 @@ def main():
     log(f"VELVEC test: hold {hv:.3f}  model {mvE:.3f} m/s ({100*(hv-mvE)/hv:+.1f}%)"
         f"  corr vx {np.corrcoef(px, vx[tev])[0,1]:+.3f}  vy {np.corrcoef(py, vy[tev])[0,1]:+.3f}")
 
-    out = Path("results/models/full"); out.mkdir(parents=True, exist_ok=True)
+    out = config.MODELS / ("full"); out.mkdir(parents=True, exist_ok=True)
     ms.save(out / "speed.keras"); mv.save(out / "velvec.keras")
     json.dump({"mean": mu.tolist(), "std": sd.tolist(), "cols": names()},
               open(out / "norm.json", "w"))
     del X, Xn
 
     log("=== DRIFT on recent trips: GYRO vs MAGNETOMETER heading ===")
-    for nm in ["mount_a", "mount_b", "pocket_a", "pocket_b", "trip11", "trip12", "trip13"]:
-        p = Path(f"data/raw/{nm}.csv")
+    for nm in ["s01_mount", "s02_mount", "s01_pocket", "s02_pocket", "s11_bike", "s12_bike", "s13_bike"]:
+        p = config.recording(nm)
         if not p.exists():
             continue
         try:

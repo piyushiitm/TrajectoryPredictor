@@ -27,6 +27,7 @@ Usage:
     python3 src/idr_navigate.py --input <S-file or dir> --model models/speed2 \
         --durations 10,30,60,120 --recal
 """
+import config
 import argparse, json
 from pathlib import Path
 

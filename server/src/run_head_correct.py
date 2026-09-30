@@ -16,6 +16,7 @@ Baselines the correction must beat:
   fused   gyro + hard-iron compass, tau shrinking with elapsed time
 A model predicting zero residual reproduces `fused` exactly.
 """
+import config
 import json
 import sys
 from pathlib import Path
@@ -76,7 +77,7 @@ def tau_for(el):
 
 def build_head(nm, hop=5):
     """Window features + gyro and fused heading estimates + the GPS truth."""
-    p = Path(f"data/raw/{nm}.csv")
+    p = config.recording(nm)
     if not p.exists():
         return None
     rs, truth = load_session_gps(p)
@@ -161,7 +162,7 @@ def main():
         te |= k & (T >= T[k].max() * (1 - TAIL))
     g1 = collect([HOLD])
     X1, Y1 = (g1[0], g1[1]) if g1 else (None, None)
-    for tag, mdir in (("app_bike", "results/models/app_bike"),
+    for tag, mdir in (("app_bike", str(config.SPEED_GENERAL)),
                       ("bike_v2", "results/models/bike_v2")):
         st = json.load(open(f"{mdir}/norm_stats.json"))
         mu = np.array(st["mean"])
@@ -257,9 +258,9 @@ def main():
     log("=== trip1 (never trained on) ===")
     r = build_head(HOLD)
     if r:
-        sc(None, "trip1", r[0], r[1])
+        sc(None, "t03_other", r[0], r[1])
 
-    out = Path("results/models/head_v2")
+    out = config.MODELS / ("head_v2")
     out.mkdir(parents=True, exist_ok=True)
     m.save(out / "head.keras")
     json.dump({"mean": mu.tolist(), "std": sd.tolist()}, open(out / "norm.json", "w"))

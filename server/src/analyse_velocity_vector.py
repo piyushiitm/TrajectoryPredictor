@@ -15,6 +15,7 @@ also scores vx against the only baseline that matters for it: predicting zero.
 If corr(vx) is still ~0, the lateral signal is absent and more of the same
 recordings will not conjure it.
 """
+import config
 import sys
 from pathlib import Path
 

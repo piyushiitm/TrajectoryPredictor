@@ -16,6 +16,7 @@ Both heads are exported to TFLite. The gyro-correction head takes the 92 speed
 features plus [dh_gyro, dh_fused, |dh_fused|, yawrate] = 98 inputs, in that
 order; the app must build them identically or the mapping is silently wrong.
 """
+import config
 import json
 import sys
 from pathlib import Path
@@ -26,7 +27,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 from run_matrix_all import (ALLB, HOLD, cached, targets, log, CACHE)
 from train_full import names
 
-OUT = Path("results/models/v3")
+OUT = config.MODELS / ("v3")
 
 
 def main():

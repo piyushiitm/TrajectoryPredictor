@@ -12,6 +12,7 @@ Nothing the model has seen is scored.
 Heading is not learned, so the fusion needs no holdout; only the speed head is
 refitted per fold.
 """
+import config
 import json
 import sys
 from pathlib import Path
@@ -24,8 +25,8 @@ from sim_compass_pipeline import compass, tau_for
 from idr_core import (load_session_gps, genuine_fixes, gyro_matrix, calibrate_yaw,
                       yaw_rate_from_cal, truth_xy, model_speed_track2, wrap, FS)
 
-FOLDS = ["mount_a", "mount_d", "mount_g", "mount_i", "hand_a", "hand_c",
-         "pocket_b", "pocket_i", "trip12"]
+FOLDS = ["s01_mount", "s04_mount", "s07_mount", "s09_mount", "s07_hand", "s09_hand",
+         "s02_pocket", "s09_pocket", "s12_bike"]
 DURS = (10.0, 30.0, 60.0)
 CAL_S = 300.0
 
@@ -41,7 +42,7 @@ def main():
         if r is not None:
             store[nm] = r
     have = list(store)
-    z = np.load(Path("data/processed/cache") / "__IO__speed.npz")
+    z = np.load(config.CACHE / "__IO__speed.npz")
     Xio, Yio = z["X"], z["Y"]
     log(f"{len(have)} recordings cached, IO-VNBD {len(Xio)} rows")
     cols = json.load(open("results/models/v3/speed/norm_stats.json"))["input_cols"]

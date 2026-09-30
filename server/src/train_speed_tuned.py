@@ -9,6 +9,7 @@ new_b -- both recorded after every pool was fixed, so neither model has seen
 them -- the difference between the two is the IO-VNBD contribution, measured
 rather than argued.
 """
+import config
 import json
 import sys
 from pathlib import Path
@@ -19,7 +20,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 from run_matrix_all import ALLB, cached, log
 from train_full import names
 
-OUT = Path("results/models/v3/speed_bikeonly")
+OUT = Path(str(config.SPEED_TUNED))
 
 
 def main():
@@ -64,7 +65,7 @@ def main():
     st = json.load(open("results/models/v3/speed/norm_stats.json"))
     vmu, vsd = np.array(st["mean"]), np.array(st["std"])
     vnet = tf.keras.models.load_model("results/models/v3/speed/model.keras")
-    for nm in ("new_a", "new_b"):
+    for nm in ("t01_mount", "t02_mount"):
         r = cached(nm, "speed")
         if r is None:
             log(f"  {nm}: no cached features"); continue

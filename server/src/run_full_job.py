@@ -9,6 +9,7 @@ The tail split is deliberate: consecutive windows overlap almost completely, so
 a random 10% of rows would put near-duplicates on both sides and report
 memorisation as accuracy.
 """
+import config
 import json, sys, time
 from pathlib import Path
 import numpy as np
@@ -17,11 +18,11 @@ sys.path.insert(0, str(Path(__file__).parent))
 from train_full import build, names
 from idr_core import load_session_gps, FS
 
-BIKE = ["trip11", "trip12", "trip13",
-        "mount_a", "mount_b", "mount_c", "mount_d", "mount_e",
-        "pocket_a", "pocket_b", "pocket_c", "pocket_d", "pocket_e"]
-NEW = ["mount_c", "mount_d", "mount_e", "pocket_c", "pocket_d", "pocket_e"]
-HOLD = "trip1"
+BIKE = ["s11_bike", "s12_bike", "s13_bike",
+        "s01_mount", "s02_mount", "s03_mount", "s04_mount", "s05_mount",
+        "s01_pocket", "s02_pocket", "s03_pocket", "s04_pocket", "s05_pocket"]
+NEW = ["s03_mount", "s04_mount", "s05_mount", "s03_pocket", "s04_pocket", "s05_pocket"]
+HOLD = "t03_other"
 TAIL, GAP_S = 0.10, 150.0
 T0 = time.time()
 
@@ -33,7 +34,7 @@ def log(*a):
 def collect(nms, hop=1):
     Xs, Ys, Ss, Ts = [], [], [], []
     for nm in nms:
-        p = Path(f"data/raw/{nm}.csv")
+        p = config.recording(nm)
         if not p.exists():
             log(f"  {nm}: missing"); continue
         try:
@@ -142,9 +143,9 @@ def main():
         X1, Y1, _, _ = g1
         p1 = np.clip(Y1[:, 2] + ms.predict((X1 - mu) / sd,
                      batch_size=16384, verbose=0).ravel(), 0, None)
-        score(p1, Y1[:, 2], Y1[:, 0], "trip1")
+        score(p1, Y1[:, 2], Y1[:, 0], "t03_other")
 
-    out = Path("results/models/bike_v2"); out.mkdir(parents=True, exist_ok=True)
+    out = config.MODELS / ("bike_v2"); out.mkdir(parents=True, exist_ok=True)
     ms.save(out / "speed_model.keras")
     json.dump({"input_cols": names(), "mean": mu.tolist(), "std": sd.tolist(),
                "scales": [2.0, 5.0, 10.0], "fs": 10.0}, open(out / "norm_stats.json", "w"))
