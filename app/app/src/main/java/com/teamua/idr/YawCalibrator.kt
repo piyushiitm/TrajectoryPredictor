@@ -109,7 +109,10 @@ class YawCalibrator(private val windowSec: Double = 180.0) {
                 for (k in c..n) m[r][k] -= f * m[c][k]
             }
         }
-        return DoubleArray(n) { m[it][it + 1] / m[it][it] }
+        // after Gauss-Jordan each row reads x_i * m[i][i] = m[i][n] (the augmented
+        // column). Reading m[i][i + 1] instead returned 0 for every gyro weight and
+        // left only the bias, so the calibrated yaw rate ignored the gyro entirely.
+        return DoubleArray(n) { m[it][n] / m[it][it] }
     }
 
     /** Calibrated yaw rate, rad/s, compass sense. */
