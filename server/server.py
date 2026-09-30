@@ -27,8 +27,14 @@ sys.path.insert(0, str(Path(__file__).resolve().parent / "src"))
 UPLOADS = ROOT / "data" / "raw" / "uploads"
 UPLOADS.mkdir(parents=True, exist_ok=True)
 
-import tensorflow as tf
-tf.config.set_visible_devices([], 'GPU')
+# Only a TFLite interpreter is needed at serve time. Prefer the small LiteRT
+# runtime (fits a 512 MB host); fall back to full TensorFlow if that's what's installed.
+try:
+    from ai_edge_litert.interpreter import Interpreter
+except ImportError:
+    import tensorflow as tf
+    tf.config.set_visible_devices([], 'GPU')
+    Interpreter = tf.lite.Interpreter
 
 from idr_core import (load_session_gps, genuine_fixes, gyro_matrix, calibrate_yaw,
                       yaw_rate_from_cal, model_speed_track2, wrap, FS)
@@ -41,7 +47,7 @@ class TFLiteModel:
     (gitignored as TFLite build artefacts), only the exported .tflite."""
 
     def __init__(self, path):
-        self._interp = tf.lite.Interpreter(model_path=str(path))
+        self._interp = Interpreter(model_path=str(path))
         self._interp.allocate_tensors()
         self._in = self._interp.get_input_details()[0]
         self._out = self._interp.get_output_details()[0]
@@ -76,11 +82,17 @@ HNET = TFLiteModel(HEAD_DIR / "model.tflite")
 
 # Recordings the speed heads trained on. Their numbers are optimistic and the UI
 # says so: a model scored on its own training data is not evidence of anything.
+import config
 TRAINED = set(
     [f"mount_{c}" for c in "abcdefghi"] +
     [f"pocket_{c}" for c in "abcdefghi"] +
     [f"hand_{c}" for c in "abcd"] +
-    ["trip11", "trip12", "trip13"])
+    ["trip11", "trip12", "trip13"] + config.TRAIN)
+
+# Where recordings are looked up: uploads first, then the legacy data/raw/, then
+# data/recordings/ (what server/fetch_data.py fills from the shared Drive folder).
+DATA_DIRS = ((UPLOADS, "upload"), (ROOT / "data" / "raw", "local"),
+             (ROOT / "data" / "recordings", "local"))
 
 app = FastAPI(title="IDR replay")
 CACHE = {}
@@ -88,7 +100,8 @@ SESSIONS = {}
 
 
 def find(name):
-    for p in (UPLOADS / f"{name}.csv", ROOT / "data" / "raw" / f"{name}.csv"):
+    for d, _ in DATA_DIRS:
+        p = d / f"{name}.csv"
         if p.exists():
             return p
     raise HTTPException(404, f"no recording named {name}")
@@ -97,7 +110,7 @@ def find(name):
 @app.get("/api/trips")
 def trips():
     seen, out = set(), []
-    for d, tag in ((UPLOADS, "upload"), (ROOT / "data" / "raw", "local")):
+    for d, tag in DATA_DIRS:
         for p in sorted(d.glob("*.csv")):
             if p.stem in seen:
                 continue
@@ -332,6 +345,9 @@ app.mount("/static", StaticFiles(directory=Path(__file__).parent / "static"),
           name="static")
 
 if __name__ == "__main__":
+    import os
     import uvicorn
-    print("  open http://127.0.0.1:8000")
-    uvicorn.run(app, host="127.0.0.1", port=8000, log_level="warning")
+    host = os.environ.get("HOST", "127.0.0.1")
+    port = int(os.environ.get("PORT", 8000))
+    print(f"  open http://{host}:{port}")
+    uvicorn.run(app, host=host, port=port, log_level="warning")
