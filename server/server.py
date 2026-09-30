@@ -13,6 +13,7 @@ already in data/raw/, so existing trips can be replayed without re-uploading.
 """
 import io
 import json
+import os
 import sys
 import traceback
 from pathlib import Path
@@ -95,6 +96,23 @@ DATA_DIRS = ((UPLOADS, "upload"), (ROOT / "data" / "raw", "local"),
              (ROOT / "data" / "recordings", "local"))
 
 app = FastAPI(title="IDR replay")
+
+# If the deploy's build step left no recordings (Drive hiccup), fetch them in the
+# background on startup so the service heals itself without a redeploy.
+import threading
+_RECS = ROOT / "data" / "recordings"
+if not any(_RECS.glob("*.csv")) and os.environ.get("DATA_FOLDER_URL"):
+    import fetch_data
+    threading.Thread(target=fetch_data.main, daemon=True).start()
+
+
+@app.get("/api/status")
+def status():
+    """What data the service has, and what the last Drive fetch did."""
+    logf = ROOT / "data" / "fetch_log.txt"
+    return {d.name if d != UPLOADS else "uploads":
+            sorted(p.name for p in d.glob("*.csv")) for d, _ in DATA_DIRS} | {
+        "fetch_log": logf.read_text().splitlines()[-40:] if logf.exists() else []}
 CACHE = {}
 SESSIONS = {}
 
