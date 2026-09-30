@@ -1,0 +1,60 @@
+[      6s] SPEED head — pool ALL + IO-VNBD (everything)
+[      6s]   25 bike recordings + IO-VNBD = 637032 rows
+Saved artifact at '/var/folders/nt/ynvknh9j6mx4x6j03nvq1x9w0000gn/T/tmp7bw5c7oi'. The following endpoints are available:
+
+* Endpoint 'serve'
+  args_0 (POSITIONAL_ONLY): TensorSpec(shape=(None, 92), dtype=tf.float32, name='keras_tensor')
+Output Type:
+  TensorSpec(shape=(None, 1), dtype=tf.float32, name=None)
+Captures:
+  4796494672: TensorSpec(shape=(), dtype=tf.resource, name=None)
+  4796496016: TensorSpec(shape=(), dtype=tf.resource, name=None)
+  4796496592: TensorSpec(shape=(), dtype=tf.resource, name=None)
+  4796495632: TensorSpec(shape=(), dtype=tf.resource, name=None)
+  4796495440: TensorSpec(shape=(), dtype=tf.resource, name=None)
+  4796497744: TensorSpec(shape=(), dtype=tf.resource, name=None)
+  4796497360: TensorSpec(shape=(), dtype=tf.resource, name=None)
+  4796496400: TensorSpec(shape=(), dtype=tf.resource, name=None)
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+W0000 00:00:1790693676.073246 8115236 tf_tfl_flatbuffer_helpers.cc:365] Ignored output_format.
+W0000 00:00:1790693676.073715 8115236 tf_tfl_flatbuffer_helpers.cc:368] Ignored drop_control_dependency.
+2026-09-29 20:24:36.074122: I tensorflow/cc/saved_model/reader.cc:83] Reading SavedModel from: /var/folders/nt/ynvknh9j6mx4x6j03nvq1x9w0000gn/T/tmp7bw5c7oi
+2026-09-29 20:24:36.074610: I tensorflow/cc/saved_model/reader.cc:52] Reading meta graph with tags { serve }
+2026-09-29 20:24:36.074626: I tensorflow/cc/saved_model/reader.cc:147] Reading SavedModel debug info (if present) from: /var/folders/nt/ynvknh9j6mx4x6j03nvq1x9w0000gn/T/tmp7bw5c7oi
+I0000 00:00:1790693676.078221 8115236 mlir_graph_optimization_pass.cc:401] MLIR V1 optimization pass is not enabled
+2026-09-29 20:24:36.078821: I tensorflow/cc/saved_model/loader.cc:236] Restoring SavedModel bundle.
+2026-09-29 20:24:36.103801: I tensorflow/cc/saved_model/loader.cc:220] Running initialization op on SavedModel bundle at path: /var/folders/nt/ynvknh9j6mx4x6j03nvq1x9w0000gn/T/tmp7bw5c7oi
+2026-09-29 20:24:36.110458: I tensorflow/cc/saved_model/loader.cc:466] SavedModel load for tags { serve }; Status: success: OK. Took 36338 microseconds.
+2026-09-29 20:24:36.137680: I tensorflow/compiler/mlir/tensorflow/utils/dump_mlir_util.cc:268] disabling MLIR crash reproducer, set env var `MLIR_CRASH_REPRODUCER_DIRECTORY` to enable.
+INFO: Created TensorFlow Lite XNNPACK delegate for CPU.
+[     49s]   exported results/models/v3/speed  (256 KB)  tflite-vs-keras 1.79e-07
+[     49s]   TEST trip1 (in no pool):  hold 3.135  model 2.216 m/s  (+29.3%)
+[     49s] 
+[     49s] GYRO-CORRECTION head — pool ALL
+[     49s]   25 recordings = 136210 rows, 96 inputs
+Saved artifact at '/var/folders/nt/ynvknh9j6mx4x6j03nvq1x9w0000gn/T/tmpcr4l2jpz'. The following endpoints are available:
+
+* Endpoint 'serve'
+  args_0 (POSITIONAL_ONLY): TensorSpec(shape=(None, 96), dtype=tf.float32, name='keras_tensor_7')
+Output Type:
+  TensorSpec(shape=(None, 1), dtype=tf.float32, name=None)
+Captures:
+  4800957520: TensorSpec(shape=(), dtype=tf.resource, name=None)
+  4800959248: TensorSpec(shape=(), dtype=tf.resource, name=None)
+  4800956176: TensorSpec(shape=(), dtype=tf.resource, name=None)
+  4800969616: TensorSpec(shape=(), dtype=tf.resource, name=None)
+  4800959632: TensorSpec(shape=(), dtype=tf.resource, name=None)
+  4800967696: TensorSpec(shape=(), dtype=tf.resource, name=None)
+  4800967888: TensorSpec(shape=(), dtype=tf.resource, name=None)
+  4800957136: TensorSpec(shape=(), dtype=tf.resource, name=None)
+W0000 00:00:1790693684.575530 8115236 tf_tfl_flatbuffer_helpers.cc:365] Ignored output_format.
+W0000 00:00:1790693684.575572 8115236 tf_tfl_flatbuffer_helpers.cc:368] Ignored drop_control_dependency.
+2026-09-29 20:24:44.575717: I tensorflow/cc/saved_model/reader.cc:83] Reading SavedModel from: /var/folders/nt/ynvknh9j6mx4x6j03nvq1x9w0000gn/T/tmpcr4l2jpz
+2026-09-29 20:24:44.576183: I tensorflow/cc/saved_model/reader.cc:52] Reading meta graph with tags { serve }
+2026-09-29 20:24:44.576197: I tensorflow/cc/saved_model/reader.cc:147] Reading SavedModel debug info (if present) from: /var/folders/nt/ynvknh9j6mx4x6j03nvq1x9w0000gn/T/tmpcr4l2jpz
+2026-09-29 20:24:44.579808: I tensorflow/cc/saved_model/loader.cc:236] Restoring SavedModel bundle.
+2026-09-29 20:24:44.600051: I tensorflow/cc/saved_model/loader.cc:220] Running initialization op on SavedModel bundle at path: /var/folders/nt/ynvknh9j6mx4x6j03nvq1x9w0000gn/T/tmpcr4l2jpz
+2026-09-29 20:24:44.606169: I tensorflow/cc/saved_model/loader.cc:466] SavedModel load for tags { serve }; Status: success: OK. Took 30453 microseconds.
+[     57s]   exported results/models/v3/gyroc  (260 KB)  tflite-vs-keras 3.73e-09
+[     57s]   TEST trip1 (in no pool):  gyro 24.73  corrected 20.75 deg  (+16.1%)
+[     57s] DONE

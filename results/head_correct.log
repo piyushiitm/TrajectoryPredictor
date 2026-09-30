@@ -1,0 +1,81 @@
+[      5s] ######################################################################
+[      5s] PART A - SPEED: app_bike vs bike_v2 on the SAME test sets
+[      5s] ######################################################################
+[     29s]   trip11:   87810 rows  (2224s)
+[     38s]   trip12:   30542 rows  (792s)
+[     45s]   trip13:   28654 rows  (745s)
+[     59s]   mount_a:   49054 rows  (1255s)
+[     72s]   mount_b:   44902 rows  (1151s)
+[     98s]   mount_c:   96002 rows  (2429s)
+[    116s]   mount_d:   64462 rows  (1640s)
+[    145s]   mount_e:  108050 rows  (2730s)
+[    158s]   pocket_a:   48290 rows  (1236s)
+[    171s]   pocket_b:   45262 rows  (1160s)
+[    197s]   pocket_c:   97298 rows  (2461s)
+[    215s]   pocket_d:   63590 rows  (1618s)
+[    245s]   pocket_e:  109510 rows  (2766s)
+[    254s]   trip1:   34974 rows  (903s)
+[    255s]   app_bike  TAILS  hold  3.035  model  2.189 m/s ( +27.9%)  corr +0.774
+[    255s]   app_bike  trip1  hold  3.132  model  3.039 m/s (  +3.0%)  corr +0.423
+[    255s]   bike_v2   TAILS  hold  3.035  model  1.717 m/s ( +43.4%)  corr +0.854
+[    255s]   bike_v2   trip1  hold  3.132  model  3.173 m/s (  -1.3%)  corr +0.491
+[    255s] 
+[    255s] ######################################################################
+[    255s] PART B - HEADING: learn the residual of the gyro+compass fusion
+[    255s] ######################################################################
+[    265s]   trip11: 9789 rows
+[    269s]   trip12: 3288 rows
+[    272s]   trip13: 2780 rows
+[    279s]   mount_a: 7188 rows
+[    286s]   mount_b: 6388 rows
+[    298s]   mount_c: 11790 rows
+[    307s]   mount_d: 9300 rows
+[    321s]   mount_e: 13533 rows
+[    328s]   pocket_a: 6972 rows
+[    335s]   pocket_b: 6268 rows
+[    348s]   pocket_c: 12340 rows
+[    357s]   pocket_d: 8908 rows
+[    371s]   pocket_e: 13589 rows
+[    371s] train 83105 | tails 14344
+[    371s] training heading-correction head ...
+Epoch 1/80
+37/37 - 1s - 21ms/step - loss: 0.0742 - val_loss: 0.1138 - learning_rate: 0.0010
+Epoch 2/80
+37/37 - 0s - 7ms/step - loss: 0.0576 - val_loss: 0.1128 - learning_rate: 0.0010
+Epoch 3/80
+37/37 - 0s - 7ms/step - loss: 0.0532 - val_loss: 0.1135 - learning_rate: 0.0010
+Epoch 4/80
+37/37 - 0s - 8ms/step - loss: 0.0492 - val_loss: 0.1148 - learning_rate: 0.0010
+Epoch 5/80
+37/37 - 0s - 7ms/step - loss: 0.0451 - val_loss: 0.1183 - learning_rate: 0.0010
+Epoch 6/80
+37/37 - 0s - 9ms/step - loss: 0.0413 - val_loss: 0.1194 - learning_rate: 0.0010
+Epoch 7/80
+37/37 - 0s - 8ms/step - loss: 0.0382 - val_loss: 0.1194 - learning_rate: 5.0000e-04
+Epoch 8/80
+37/37 - 0s - 7ms/step - loss: 0.0365 - val_loss: 0.1204 - learning_rate: 5.0000e-04
+Epoch 9/80
+37/37 - 0s - 8ms/step - loss: 0.0350 - val_loss: 0.1244 - learning_rate: 5.0000e-04
+Epoch 10/80
+37/37 - 0s - 8ms/step - loss: 0.0337 - val_loss: 0.1252 - learning_rate: 5.0000e-04
+[    374s] 
+[    374s] === held-out TAILS ===
+[    375s]     ALL TAILS    gyro  11.56  fused  13.60  model  14.09 deg   vs fused   -3.6%   best=gyro
+[    375s]     mount_a      gyro   3.29  fused   3.00  model   4.27 deg   vs fused  -42.3%   best=fused
+[    375s]     mount_b      gyro   3.01  fused   4.76  model   5.16 deg   vs fused   -8.5%   best=gyro
+[    375s]     mount_c      gyro   8.19  fused  14.87  model  15.54 deg   vs fused   -4.5%   best=gyro
+[    375s]     mount_d      gyro  15.88  fused   7.61  model   8.51 deg   vs fused  -11.8%   best=fused
+[    375s]     mount_e      gyro   6.71  fused   9.39  model   9.35 deg   vs fused   +0.4%   best=gyro
+[    375s]     pocket_a     gyro  22.84  fused  32.68  model  32.97 deg   vs fused   -0.9%   best=gyro
+[    375s]     pocket_b     gyro  15.34  fused  16.77  model  15.67 deg   vs fused   +6.5%   best=gyro
+[    375s]     pocket_c     gyro  10.33  fused   6.06  model   6.86 deg   vs fused  -13.2%   best=fused
+[    375s]     pocket_d     gyro  43.53  fused  13.65  model  11.79 deg   vs fused  +13.6%   best=MODEL
+[    375s]     pocket_e     gyro   9.99  fused  22.00  model  23.66 deg   vs fused   -7.6%   best=gyro
+[    375s]     trip11       gyro  10.21  fused  15.01  model  15.00 deg   vs fused   +0.1%   best=gyro
+[    375s]     trip12       gyro  13.15  fused  10.83  model  12.15 deg   vs fused  -12.1%   best=fused
+[    375s]     trip13       gyro  14.32  fused  22.85  model  22.96 deg   vs fused   -0.5%   best=gyro
+[    375s] 
+[    375s] === trip1 (never trained on) ===
+[    380s]     trip1        gyro  24.63  fused  18.03  model  17.92 deg   vs fused   +0.6%   best=MODEL
+[    380s] saved results/models/head_v2
+[    380s] DONE

@@ -1,0 +1,21 @@
+[      4s] 25 recordings cached, IO-VNBD 251018 rows
+[     23s]   mount_a    10s fused   9.5% gyro   9.3%  30s fused   9.3% gyro  10.4%  60s fused  12.7% gyro  12.3%
+[     44s]   mount_d    10s fused   9.1% gyro   8.6%  30s fused  13.1% gyro  14.6%  60s fused  12.4% gyro  19.3%
+[     70s]   mount_g    10s fused  13.0% gyro  12.2%  30s fused  14.5% gyro  17.1%  60s fused  14.9% gyro  20.4%
+[    104s]   mount_i    10s fused  14.4% gyro  12.0%  30s fused  28.0% gyro  17.9%  60s fused  38.1% gyro  21.7%
+[    159s]   hand_a     10s fused  13.7% gyro  13.4%  30s fused  16.7% gyro  19.2%  60s fused  17.8% gyro  20.9%
+[    233s]   hand_c     10s fused  14.1% gyro  14.6%  30s fused  16.1% gyro  21.7%  60s fused  19.8% gyro  25.5%
+[    280s]   pocket_b   10s fused  20.4% gyro  19.6%  30s fused  27.8% gyro  32.6%  60s fused  29.6% gyro  37.8%
+[    342s]   pocket_i   10s fused  13.8% gyro  13.9%  30s fused  18.0% gyro  21.7%  60s fused  16.8% gyro  35.0%
+[    409s]   trip12     10s fused  15.7% gyro  15.5%  30s fused  15.6% gyro  21.5%  60s fused  13.4% gyro  28.3%
+[    409s] 
+[    409s] ==============================================================
+[    409s] LEAVE-ONE-RECORDING-OUT DRIFT  (median over recordings)
+[    409s] ==============================================================
+[    409s]   outage       gyro  compass    fused     hold   <10%
+[    409s]      10s      13.4%    15.2%    13.8%    15.8%   2/9
+[    409s]      30s      19.2%    17.0%    16.1%    25.2%   1/9
+[    409s]      60s      21.7%    17.0%    16.8%    32.2%   0/9
+[    409s] 
+[    409s] The last column counts recordings whose MEDIAN fused drift is under 10%.
+[    409s] DONE

@@ -1,0 +1,51 @@
+[    128s] cached speed: 26 recordings
+[    250s] cached velvec: 26 recordings
+[    404s] cached gyroc: 26 recordings
+[    429s] cached magc: 26 recordings
+[    502s] IO-VNBD built: 251018 rows
+WARNING:tensorflow:5 out of the last 5 calls to <function TensorFlowTrainer.make_predict_function.<locals>.one_step_on_data_distributed at 0x1276dd9e0> triggered tf.function retracing. Tracing is expensive and the excessive number of tracings could be due to (1) creating @tf.function repeatedly in a loop, (2) passing tensors with different shapes, (3) passing Python objects instead of tensors. For (1), please define your @tf.function outside of the loop. For (2), @tf.function has reduce_retracing=True option that can avoid unnecessary retracing. For (3), please refer to https://www.tensorflow.org/guide/function#controlling_retracing and https://www.tensorflow.org/api_docs/python/tf/function for  more details.
+WARNING:tensorflow:6 out of the last 6 calls to <function TensorFlowTrainer.make_predict_function.<locals>.one_step_on_data_distributed at 0x1276dd9e0> triggered tf.function retracing. Tracing is expensive and the excessive number of tracings could be due to (1) creating @tf.function repeatedly in a loop, (2) passing tensors with different shapes, (3) passing Python objects instead of tensors. For (1), please define your @tf.function outside of the loop. For (2), @tf.function has reduce_retracing=True option that can avoid unnecessary retracing. For (3), please refer to https://www.tensorflow.org/guide/function#controlling_retracing and https://www.tensorflow.org/api_docs/python/tf/function for  more details.
+[    570s] speed  NEW     rec=12 rows= 211312   LORO   +40.7%   TAILS   +49.1%   trip1   +18.5%   gap   +8.4
+[    597s] speed  MOUNT   rec= 9 rows= 145538   LORO   +39.9%   TAILS   +53.7%   trip1   -19.0%   gap  +13.7
+[    609s] speed  HAND    rec= 4 rows=  57844   LORO   +38.7%   TAILS   +35.3%   trip1   +21.2%   gap   -3.4
+[    738s] speed  ALL     rec=25 rows= 386014   LORO   +34.9%   TAILS   +49.7%   trip1   +13.0%   gap  +14.8
+[    872s] speed  ALL+IO  rec=25 rows= 386014   LORO   +39.3%   TAILS   +48.5%   trip1   +25.6%   gap   +9.2
+[    920s] velvec NEW     rec=12 rows= 211312   LORO   +14.8%   TAILS   +24.4%   trip1   +11.9%   gap   +9.7
+[    948s] velvec MOUNT   rec= 9 rows= 145538   LORO   +18.1%   TAILS   +31.9%   trip1    -0.2%   gap  +13.7
+[    957s] velvec HAND    rec= 4 rows=  57844   LORO   +13.8%   TAILS   +18.4%   trip1   +10.4%   gap   +4.6
+[   1069s] velvec ALL     rec=25 rows= 386014   LORO   +15.7%   TAILS   +28.9%   trip1    +7.2%   gap  +13.2
+[   1194s] velvec ALL+IO  rec=25 rows= 386014   LORO   +17.1%   TAILS   +28.3%   trip1   +11.1%   gap  +11.2
+[   1235s] gyroc  NEW     rec=12 rows=  80127   LORO   +21.9%   TAILS   +29.4%   trip1   +16.4%   gap   +7.5
+[   1248s] gyroc  MOUNT   rec= 9 rows=  53176   LORO   -12.3%   TAILS    -0.9%   trip1    +1.8%   gap  +11.3
+[   1260s] gyroc  HAND    rec= 4 rows=  22318   LORO   +11.5%   TAILS   +10.8%   trip1    -0.1%   gap   -0.7
+[   1296s] gyroc  ALL     rec=25 rows= 136210   LORO   +17.2%   TAILS   +21.2%   trip1    +9.2%   gap   +4.0
+[   1329s] magc   NEW     rec=12 rows= 213347   LORO   -48.5%   TAILS    +2.6%   trip1   -18.4%   gap  +51.0
+[   1346s] magc   MOUNT   rec= 9 rows= 141770   LORO   -13.3%   TAILS   +10.6%   trip1   -21.8%   gap  +23.9
+[   1355s] magc   HAND    rec= 4 rows=  62740   LORO    -8.4%   TAILS    +1.4%   trip1    +4.5%   gap   +9.8
+[   1389s] magc   ALL     rec=25 rows= 368479   LORO    -6.2%   TAILS   +12.0%   trip1    -8.2%   gap  +18.3
+[   1389s] 
+[   1389s] ======================================================================================
+[   1389s] head    pool     rec     rows      LORO     TAILS     trip1     gap
+[   1389s] ======================================================================================
+[   1389s] speed   NEW       12   211312     +40.7     +49.1     +18.5    +8.4
+[   1389s] speed   MOUNT      9   145538     +39.9     +53.7     -19.0   +13.7
+[   1389s] speed   HAND       4    57844     +38.7     +35.3     +21.2    -3.4
+[   1389s] speed   ALL       25   386014     +34.9     +49.7     +13.0   +14.8
+[   1389s] speed   ALL+IO    25   386014     +39.3     +48.5     +25.6    +9.2
+[   1389s] velvec  NEW       12   211312     +14.8     +24.4     +11.9    +9.7
+[   1389s] velvec  MOUNT      9   145538     +18.1     +31.9      -0.2   +13.7
+[   1389s] velvec  HAND       4    57844     +13.8     +18.4     +10.4    +4.6
+[   1389s] velvec  ALL       25   386014     +15.7     +28.9      +7.2   +13.2
+[   1389s] velvec  ALL+IO    25   386014     +17.1     +28.3     +11.1   +11.2
+[   1389s] gyroc   NEW       12    80127     +21.9     +29.4     +16.4    +7.5
+[   1389s] gyroc   MOUNT      9    53176     -12.3      -0.9      +1.8   +11.3
+[   1389s] gyroc   HAND       4    22318     +11.5     +10.8      -0.1    -0.7
+[   1389s] gyroc   ALL       25   136210     +17.2     +21.2      +9.2    +4.0
+[   1389s] magc    NEW       12   213347     -48.5      +2.6     -18.4   +51.0
+[   1389s] magc    MOUNT      9   141770     -13.3     +10.6     -21.8   +23.9
+[   1389s] magc    HAND       4    62740      -8.4      +1.4      +4.5    +9.8
+[   1389s] magc    ALL       25   368479      -6.2     +12.0      -8.2   +18.3
+[   1389s] 
+[   1389s] LORO is the honest number. A large TAILS-minus-LORO gap means the model
+[   1389s] memorised the ride rather than learning a transferable rule.
+[   1389s] DONE

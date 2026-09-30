@@ -1,0 +1,332 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>IDR Replay</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+  :root{
+    --bg:#11151c; --panel:#171d27; --line:#26303f; --text:#e6edf6; --dim:#8da2bd;
+    --accent:#2563eb;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--text);
+    font:13.5px/1.45 ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+  #wrap{display:grid;grid-template-columns:352px 1fr;height:100%}
+  #side{background:var(--panel);border-right:1px solid var(--line);
+    padding:14px;overflow:auto}
+  #map{height:100%}
+  h1{font-size:16px;margin:0 0 2px}
+  .sub{color:var(--dim);font-size:11.5px;margin-bottom:14px}
+  label{display:block;font-size:11.5px;color:var(--dim);margin:11px 0 4px}
+  select,input[type=number],button{width:100%;background:#0e131a;color:var(--text);
+    border:1px solid var(--line);border-radius:8px;padding:7px 9px;font-size:13px}
+  button{cursor:pointer;font-weight:600}
+  button:hover{border-color:#3d4c63}
+  button.primary{background:var(--accent);border-color:var(--accent)}
+  button.on{background:#0f2d1c;border-color:#2ecc71;color:#8ff0b5}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+  .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px}
+  .drop{border:1.5px dashed var(--line);border-radius:10px;padding:11px;
+    text-align:center;color:var(--dim);font-size:11.5px;cursor:pointer}
+  .drop.on{border-color:var(--accent);color:var(--text)}
+  #msg{margin-top:8px;font-size:11.5px;color:var(--dim);min-height:16px}
+  #msg.err{color:#ff8d7a}
+  .mono{font-variant-numeric:tabular-nums;font-family:ui-monospace,Menlo,monospace}
+
+  /* legend doubles as the visibility control -- always on screen */
+  .legend{margin-top:12px;border:1px solid var(--line);border-radius:10px;
+    overflow:hidden}
+  .legend .hd{display:flex;justify-content:space-between;align-items:center;
+    padding:7px 10px;background:#0e131a;font-size:11px;color:var(--dim);
+    border-bottom:1px solid var(--line)}
+  .legend .hd a{color:var(--dim);cursor:pointer;text-decoration:underline}
+  .lrow{display:grid;grid-template-columns:16px 1fr auto auto;gap:8px;
+    align-items:center;padding:6px 10px;cursor:pointer;font-size:12px;
+    border-bottom:1px solid #1d2531}
+  .lrow:last-child{border-bottom:none}
+  .lrow:hover{background:#1b2230}
+  .lrow.off{opacity:.34}
+  .sw{width:13px;height:13px;border-radius:3px}
+  .lrow .now,.lrow .fin{font-size:11px;color:var(--dim);
+    font-variant-numeric:tabular-nums;font-family:ui-monospace,Menlo,monospace}
+  .lrow .fin{color:var(--text);min-width:46px;text-align:right}
+  .clock{display:flex;justify-content:space-between;align-items:baseline;
+    margin-top:12px;padding:9px 11px;background:#0e131a;border:1px solid var(--line);
+    border-radius:10px}
+  .clock .t{font-size:23px;font-weight:700;font-variant-numeric:tabular-nums;
+    font-family:ui-monospace,Menlo,monospace}
+  .clock .r{text-align:right;font-size:11px;color:var(--dim);line-height:1.35}
+  .badge{display:inline-block;padding:1px 6px;border-radius:999px;font-size:10px;
+    border:1px solid var(--line);color:var(--dim);margin-left:6px}
+  .badge.warn{border-color:#a8631f;color:#f0b26b}
+  .badge.ok{border-color:#237a4a;color:#7fe0a6}
+</style>
+</head>
+<body>
+<div id="wrap">
+  <div id="side">
+    <h1>IDR Replay</h1>
+    <div class="sub">The same engine the phone runs, played back over a recording.</div>
+
+    <div class="drop" id="drop">Drop a .csv here, or click to choose</div>
+    <input type="file" id="file" accept=".csv" hidden>
+
+    <label>Recording <span id="seenBadge"></span></label>
+    <select id="trip"></select>
+
+    <label>Speed model</label>
+    <select id="model">
+      <option value="tuned">Tuned — this bike only (sharper here)</option>
+      <option value="general">General — plus car data (holds up elsewhere)</option>
+    </select>
+
+    <div class="row">
+      <div><label>Outage start (s)</label>
+        <input type="number" id="start" value="-1" step="10"></div>
+      <div><label>Duration (s, 0 = end)</label>
+        <input type="number" id="dur" value="60" step="10"></div>
+    </div>
+
+    <label>&nbsp;</label>
+    <button class="primary" id="run">Run engine</button>
+
+    <label>Jump to a window, ranked by drift</label>
+    <div class="row">
+      <button id="best">Best windows</button>
+      <button id="worst">Worst windows</button>
+    </div>
+    <select id="winlist" style="margin-top:7px;display:none"></select>
+    <div id="msg"></div>
+
+    <div class="clock">
+      <div><div class="t mono" id="tEl">0:00</div>
+        <div style="font-size:10.5px;color:var(--dim)">into the blackout</div></div>
+      <div class="r">
+        <div><b class="mono" id="tDist">0</b> m travelled</div>
+        <div><b class="mono" id="tSpd">0.0</b> m/s model speed</div>
+        <div><span class="mono" id="tOf">0:00</span> total</div>
+      </div>
+    </div>
+
+    <div class="row3" style="margin-top:9px">
+      <button id="play">Play</button>
+      <button id="reset">Reset</button>
+      <button id="solo">Solo: off</button>
+    </div>
+    <input type="range" id="scrub" min="0" max="0" value="0" style="margin-top:9px">
+    <label>Playback speed — <span id="spdLbl" class="mono">4x</span></label>
+    <input type="range" id="rate" min="1" max="60" value="4">
+
+    <div class="legend" id="legend">
+      <div class="hd"><span>track — click to show / hide</span>
+        <span><a id="allOn">all</a></span></div>
+      <div id="lrows"></div>
+    </div>
+  </div>
+  <div id="map"></div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+const COL = {truth:'#2ecc71', gpshdg:'#9b59b6', gyro:'#f1c40f', mag:'#3498db',
+             fused:'#e67e22', mlgyro:'#e74c3c', hold:'#7f8c9b'};
+const NAME = {truth:'GNSS truth', gpshdg:'GPS bearing + AI speed', gyro:'gyro only',
+              mag:'compass only', fused:'gyro + compass',
+              mlgyro:'gyro + ML correction', hold:'hold last speed'};
+const NOTE = {gpshdg:'ceiling', hold:'baseline'};
+const ORDER = ['truth','gpshdg','gyro','mag','fused','mlgyro','hold'];
+
+const map = L.map('map').setView([23.20, 77.42], 14);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+  {maxZoom:19, attribution:'&copy; OpenStreetMap'}).addTo(map);
+
+let D=null, lines={}, dots={}, i=0, timer=null, vis={}, solo=null;
+const $ = id => document.getElementById(id);
+const msg = (t,e) => { $('msg').textContent=t; $('msg').className = e?'err':''; };
+const mmss = s => `${Math.floor(s/60)}:${String(Math.floor(s%60)).padStart(2,'0')}`;
+
+async function loadTrips(sel){
+  const list = await (await fetch('/api/trips')).json();
+  const unseen = list.filter(t=>!t.trained), seen = list.filter(t=>t.trained);
+  const opt = t => `<option value="${t.name}" data-trained="${t.trained}">`
+    + `${t.name} — ${t.mb} MB</option>`;
+  $('trip').innerHTML =
+    `<optgroup label="Unseen — honest tests (${unseen.length})">`
+    + unseen.map(opt).join('') + '</optgroup>'
+    + `<optgroup label="Used in training — optimistic (${seen.length})">`
+    + seen.map(opt).join('') + '</optgroup>';
+  if(sel) $('trip').value = sel;
+  badge();
+}
+function badge(){
+  const o = $('trip').selectedOptions[0];
+  $('seenBadge').innerHTML = !o ? '' : (o.dataset.trained === 'true'
+    ? '<span class="badge warn">in training data</span>'
+    : '<span class="badge ok">unseen</span>');
+}
+$('trip').onchange = badge;
+
+$('drop').onclick = () => $('file').click();
+$('drop').ondragover = e => { e.preventDefault(); $('drop').classList.add('on'); };
+$('drop').ondragleave = () => $('drop').classList.remove('on');
+$('drop').ondrop = e => { e.preventDefault(); $('drop').classList.remove('on');
+  if(e.dataTransfer.files[0]) send(e.dataTransfer.files[0]); };
+$('file').onchange = e => { if(e.target.files[0]) send(e.target.files[0]); };
+
+async function send(f){
+  msg('uploading ' + f.name + ' …');
+  const fd = new FormData(); fd.append('file', f);
+  const r = await fetch('/api/upload', {method:'POST', body:fd});
+  if(!r.ok){ msg('upload failed', true); return; }
+  const j = await r.json();
+  await loadTrips(j.name);
+  msg('uploaded ' + j.name);
+}
+
+async function runEngine(){
+  stop();
+  const n = $('trip').value;
+  if(!n){ msg('pick a recording first', true); return; }
+  msg('running the engine on ' + n + ' …');
+  const q = `start_s=${$('start').value}&duration_s=${$('dur').value}`
+          + `&model=${$('model').value}`;
+  const r = await fetch(`/api/replay/${encodeURIComponent(n)}?${q}`);
+  if(!r.ok){ const e = await r.json().catch(()=>({detail:'failed'}));
+    msg(e.detail || 'engine failed', true); return; }
+  D = await r.json();
+  build();
+  msg(`${D.seconds}s from t=${D.start_s}s · ${D.distance_m} m · cal R² ${D.cal_r2}`
+      + (D.trained_on ? ' · model trained on this ride' : ''));
+}
+$('run').onclick = runEngine;
+$('model').onchange = () => { if(D) runEngine(); };
+
+async function ranked(which){
+  const n = $('trip').value;
+  if(!n){ msg('pick a recording first', true); return; }
+  const dur = Math.max(10, +$('dur').value || 60);
+  msg(`scoring every ${dur}s window …`);
+  const r = await fetch(`/api/windows/${encodeURIComponent(n)}`
+    + `?duration_s=${dur}&model=${$('model').value}`);
+  if(!r.ok){ const e = await r.json().catch(()=>({detail:'failed'}));
+    msg(e.detail || 'failed', true); return; }
+  const j = await r.json();
+  const rows = which === 'best' ? j.best : j.worst;
+  $('winlist').style.display = 'block';
+  $('winlist').innerHTML = rows.map(w =>
+    `<option value="${w.start_s}">t=${mmss(w.start_s)} — ${w[j.track]}% `
+    + `(gyro ${w.gyro}%, ${w.dist_m} m, R² ${w.cal_r2})</option>`).join('');
+  $('start').value = rows[0].start_s;
+  msg(`${which} of ${j.n} windows · median ${j.median}% · showing ${j.track}`);
+  runEngine();
+}
+$('best').onclick = () => ranked('best');
+$('worst').onclick = () => ranked('worst');
+$('winlist').onchange = e => { $('start').value = e.target.value; runEngine(); };
+
+function build(){
+  Object.values(lines).forEach(l=>map.removeLayer(l));
+  Object.values(dots).forEach(d=>map.removeLayer(d));
+  lines={}; dots={};
+  const keys = ORDER.filter(k => k==='truth' || (D.tracks && k in D.tracks));
+  for(const k of keys){
+    const c = COL[k] || '#999';
+    lines[k] = L.polyline([], {color:c, weight:k==='truth'?5:3,
+      opacity:k==='truth'?.95:.85}).addTo(map);
+    dots[k] = L.circleMarker([0,0], {radius:k==='truth'?8:5, color:c,
+      fillColor:c, fillOpacity:1, weight:2}).addTo(map).bindTooltip(NAME[k]||k);
+    if(!(k in vis)) vis[k] = true;
+  }
+  legend(keys);
+  $('scrub').max = D.truth.length - 1;
+  $('tOf').textContent = mmss(D.seconds);
+  map.fitBounds(L.latLngBounds(D.truth));
+  i = 0; draw();
+}
+
+function legend(keys){
+  $('lrows').innerHTML = keys.map(k => {
+    const f = (D.final && D.final[k]) ? `${D.final[k].pct}%` : '';
+    const nt = NOTE[k] ? ` <span class="badge">${NOTE[k]}</span>` : '';
+    return `<div class="lrow ${vis[k]?'':'off'}" data-k="${k}">
+      <span class="sw" style="background:${COL[k]||'#999'}"></span>
+      <span>${NAME[k]||k}${nt}</span>
+      <span class="now" id="now-${k}"></span>
+      <span class="fin">${f}</span></div>`;
+  }).join('');
+  [...document.querySelectorAll('.lrow')].forEach(el => {
+    el.onclick = () => {
+      const k = el.dataset.k;
+      if(solo){ solo = null; Object.keys(vis).forEach(x=>vis[x]=true);
+                $('solo').textContent='Solo: off'; $('solo').classList.remove('on'); }
+      vis[k] = !vis[k];
+      el.classList.toggle('off', !vis[k]);
+      draw();
+    };
+  });
+}
+
+// Solo cycles one heading track at a time, so a single path can be judged
+// against truth without five others crossing it.
+$('solo').onclick = () => {
+  if(!D) return;
+  const cyc = ORDER.filter(k => k!=='truth' && D.tracks && k in D.tracks);
+  solo = solo === null ? cyc[0] : cyc[(cyc.indexOf(solo)+1) % cyc.length];
+  Object.keys(vis).forEach(k => vis[k] = (k==='truth' || k===solo));
+  $('solo').textContent = 'Solo: ' + (NAME[solo]||solo).split(' ')[0];
+  $('solo').classList.add('on');
+  legend(ORDER.filter(k => k==='truth' || (D.tracks && k in D.tracks)));
+  draw();
+};
+$('allOn').onclick = () => {
+  solo = null; Object.keys(vis).forEach(k=>vis[k]=true);
+  $('solo').textContent='Solo: off'; $('solo').classList.remove('on');
+  legend(ORDER.filter(k => k==='truth' || (D.tracks && k in D.tracks)));
+  draw();
+};
+
+const pos = (k,j) => k==='truth' ? D.truth[j] : D.tracks[k][j];
+function metres(a,b){
+  const R=6371000, d1=(a[0]-b[0])*Math.PI/180,
+        d2=(a[1]-b[1])*Math.PI/180*Math.cos(a[0]*Math.PI/180);
+  return Math.hypot(d1*R, d2*R);
+}
+
+function draw(){
+  if(!D) return;
+  for(const k of Object.keys(lines)){
+    if(!vis[k]){ lines[k].setLatLngs([]); dots[k].setStyle({opacity:0,fillOpacity:0});
+                 const e=$('now-'+k); if(e) e.textContent=''; continue; }
+    dots[k].setStyle({opacity:1, fillOpacity:1});
+    const pts=[]; for(let j=0;j<=i;j++) pts.push(pos(k,j));
+    lines[k].setLatLngs(pts); dots[k].setLatLng(pos(k,i));
+    const e = $('now-'+k);
+    if(e && k!=='truth') e.textContent = metres(pos(k,i), D.truth[i]).toFixed(0)+' m';
+  }
+  $('scrub').value = i;
+  $('tEl').textContent = mmss(i / D.hz);
+  $('tDist').textContent = D.dist[i].toFixed(0);
+  $('tSpd').textContent = D.speed[i].toFixed(1);
+}
+
+function stop(){ if(timer){clearInterval(timer); timer=null;} $('play').textContent='Play'; }
+function tick(){
+  if(timer) clearInterval(timer);
+  timer = setInterval(() => {
+    if(i >= D.truth.length-1){ stop(); return; }
+    i++; draw();
+  }, Math.max(16, 1000 / +$('rate').value));
+}
+$('play').onclick = () => { if(!D) return;
+  if(timer){ stop(); return; } $('play').textContent='Pause'; tick(); };
+$('reset').onclick = () => { stop(); i=0; draw(); };
+$('scrub').oninput = e => { stop(); i=+e.target.value; draw(); };
+$('rate').oninput = e => { $('spdLbl').textContent=e.target.value+'x';
+  if(timer) tick(); };
+
+loadTrips();
+</script>
+</body>
+</html>

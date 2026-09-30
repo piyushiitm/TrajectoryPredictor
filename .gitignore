@@ -1,0 +1,22 @@
+# Recordings: ~1.1 GB. MANIFEST.csv lists them; the files themselves are not
+# something GitHub should carry.
+data/recordings/
+data/raw/
+*.csv
+!data/MANIFEST.csv
+
+# Keras checkpoints are a build artefact of the .tflite that actually ships
+*.keras
+
+# Android build output
+app/build/
+app/app/build/
+.gradle/
+local.properties
+*.iml
+
+# Python
+venv/
+__pycache__/
+*.pyc
+.DS_Store

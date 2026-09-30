@@ -1,0 +1,29 @@
+file,session,placement,split,mb,source
+s01_mount.csv,s01,mount,train,29.0,mount recording/telemetry_capture_1790618299516.csv
+s01_pocket.csv,s01,pocket,train,26.4,Pocketrecording/telemetry_capture_1790618340541.csv
+s02_mount.csv,s02,mount,train,26.7,mount recording/telemetry_capture_1790620968117.csv
+s02_pocket.csv,s02,pocket,train,24.9,Pocketrecording/telemetry_capture_1790620985241.csv
+s03_mount.csv,s03,mount,train,50.1,tests/mount/telemetry_capture_1790654900962.csv
+s03_pocket.csv,s03,pocket,train,51.6,tests/pocket/telemetry_capture_1790654885906.csv
+s04_mount.csv,s04,mount,train,34.2,tests/mount/telemetry_capture_1790658266329.csv
+s04_pocket.csv,s04,pocket,train,34.3,tests/pocket/telemetry_capture_1790658315702.csv
+s05_mount.csv,s05,mount,train,55.9,tests/mount/mount.csv
+s05_pocket.csv,s05,pocket,train,57.7,tests/pocket/pocket.csv
+s06_mount.csv,s06,mount,train,33.3,tests/mount/telemetry_capture_1790668226826.csv
+s06_pocket.csv,s06,pocket,train,34.4,tests/pocket/telemetry_capture_1790668270663.csv
+s07_hand.csv,s07,hand,train,40.4,tests/hand/telemetry_capture_1790670603165.csv
+s07_mount.csv,s07,mount,train,41.4,tests/mount/telemetry_capture_1790670514930.csv
+s07_pocket.csv,s07,pocket,train,58.5,tests/pocket/telemetry_capture_1790670559334.csv
+s08_hand.csv,s08,hand,train,48.3,tests/hand/telemetry_capture_1790673406656.csv
+s08_mount.csv,s08,mount,train,47.6,tests/mount/telemetry_capture_1790673388062.csv
+s08_pocket.csv,s08,pocket,train,52.3,tests/pocket/telemetry_capture_1790673367506.csv
+s09_hand.csv,s09,hand,train,45.2,tests/hand/telemetry_capture_1790676260973.csv
+s09_mount.csv,s09,mount,train,68.5,tests/mount/telemetry_capture_1790676214590.csv
+s09_pocket.csv,s09,pocket,train,69.3,tests/pocket/telemetry_capture_1790676237961.csv
+s10_hand.csv,s10,hand,train,20.9,tests/hand/telemetry_capture_1790678539162.csv
+s11_bike.csv,s11,bike,train,45.0,trip11
+s12_bike.csv,s12,bike,train,16.5,trip12
+s13_bike.csv,s13,bike,train,15.5,trip13
+t01_mount.csv,t01,mount,test,28.0,new_a
+t02_mount.csv,t02,mount,test,29.3,new_b
+t03_other.csv,t03,other,test,19.9,trip1
