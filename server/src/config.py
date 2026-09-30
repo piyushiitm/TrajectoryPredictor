@@ -11,7 +11,7 @@ traffic and rider -- with the old timestamped names the grouping was invisible.
 """
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent
+ROOT = Path(__file__).resolve().parent.parent.parent
 DATA = ROOT / "data" / "recordings"
 UPLOADS = ROOT / "data" / "uploads"
 MODELS = ROOT / "models"
