@@ -13,6 +13,7 @@ already in data/raw/, so existing trips can be replayed without re-uploading.
 """
 import io
 import json
+import os
 import sys
 import traceback
 from pathlib import Path
@@ -23,48 +24,102 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(ROOT / "src"))
+sys.path.insert(0, str(Path(__file__).resolve().parent / "src"))
 UPLOADS = ROOT / "data" / "raw" / "uploads"
 UPLOADS.mkdir(parents=True, exist_ok=True)
 
-import tensorflow as tf
-tf.config.set_visible_devices([], 'GPU')
+# Only a TFLite interpreter is needed at serve time. Prefer the small LiteRT
+# runtime (fits a 512 MB host); fall back to full TensorFlow if that's what's installed.
+try:
+    from ai_edge_litert.interpreter import Interpreter
+except ImportError:
+    import tensorflow as tf
+    tf.config.set_visible_devices([], 'GPU')
+    Interpreter = tf.lite.Interpreter
 
 from idr_core import (load_session_gps, genuine_fixes, gyro_matrix, calibrate_yaw,
                       yaw_rate_from_cal, model_speed_track2, wrap, FS)
 from sim_compass_pipeline import compass, tau_for
 
-HEAD_DIR = ROOT / "results" / "models" / "v3" / "gyroc"
+
+class TFLiteModel:
+    """Wraps a .tflite interpreter behind the same .predict() the engine
+    expects from a Keras model -- no .keras checkpoints ship in the repo
+    (gitignored as TFLite build artefacts), only the exported .tflite."""
+
+    def __init__(self, path):
+        self._interp = Interpreter(model_path=str(path))
+        self._interp.allocate_tensors()
+        self._in = self._interp.get_input_details()[0]
+        self._out = self._interp.get_output_details()[0]
+
+    def predict(self, X, batch_size=None, verbose=0):
+        X = np.asarray(X, dtype=self._in["dtype"])
+        if tuple(self._interp.get_input_details()[0]["shape"]) != X.shape:
+            self._interp.resize_tensor_input(self._in["index"], X.shape)
+            self._interp.allocate_tensors()
+        self._interp.set_tensor(self._in["index"], X)
+        self._interp.invoke()
+        return self._interp.get_tensor(self._out["index"])
+
+
+# HEAD_DIR corrects the gyro heading (h["mlgyro"] below), so it's the "gyro"
+# baseline head, not "fused" -- see train_heading_correction.py's BASE dict.
+HEAD_DIR = ROOT / "models" / "heading_correction_gyro"
 
 # Two speed heads, the same pair the phone carries.
 #   tuned    the 25 bike recordings only -- sharper on this bike
 #   general  those plus the IO-VNBD car pool -- holds up on other vehicles
-SPEED_DIRS = {"tuned": ROOT / "results" / "models" / "v3" / "speed_bikeonly",
-              "general": ROOT / "results" / "models" / "v3" / "speed"}
+SPEED_DIRS = {"tuned": ROOT / "models" / "speed_tuned",
+              "general": ROOT / "models" / "speed_general"}
 SPEED = {}
 for _k, _d in SPEED_DIRS.items():
     _st = json.load(open(_d / "norm_stats.json"))
     SPEED[_k] = (np.array(_st["mean"]), np.array(_st["std"]), _st["input_cols"],
-                 tf.keras.models.load_model(_d / "model.keras"))
+                 TFLiteModel(_d / "model.tflite"))
 _hs = json.load(open(HEAD_DIR / "norm_stats.json"))
 HMU, HSD = np.array(_hs["mean"]), np.array(_hs["std"])
-HNET = tf.keras.models.load_model(HEAD_DIR / "model.keras")
+HNET = TFLiteModel(HEAD_DIR / "model.tflite")
 
 # Recordings the speed heads trained on. Their numbers are optimistic and the UI
 # says so: a model scored on its own training data is not evidence of anything.
+import config
 TRAINED = set(
     [f"mount_{c}" for c in "abcdefghi"] +
     [f"pocket_{c}" for c in "abcdefghi"] +
     [f"hand_{c}" for c in "abcd"] +
-    ["trip11", "trip12", "trip13"])
+    ["trip11", "trip12", "trip13"] + config.TRAIN)
+
+# Where recordings are looked up: uploads first, then the legacy data/raw/, then
+# data/recordings/ (what server/fetch_data.py fills from the shared Drive folder).
+DATA_DIRS = ((UPLOADS, "upload"), (ROOT / "data" / "raw", "local"),
+             (ROOT / "data" / "recordings", "local"))
 
 app = FastAPI(title="IDR replay")
+
+# If the deploy's build step left no recordings (Drive hiccup), fetch them in the
+# background on startup so the service heals itself without a redeploy.
+import threading
+_RECS = ROOT / "data" / "recordings"
+if not any(_RECS.glob("*.csv")) and os.environ.get("DATA_FOLDER_URL"):
+    import fetch_data
+    threading.Thread(target=fetch_data.main, daemon=True).start()
+
+
+@app.get("/api/status")
+def status():
+    """What data the service has, and what the last Drive fetch did."""
+    logf = ROOT / "data" / "fetch_log.txt"
+    return {d.name if d != UPLOADS else "uploads":
+            sorted(p.name for p in d.glob("*.csv")) for d, _ in DATA_DIRS} | {
+        "fetch_log": logf.read_text().splitlines()[-40:] if logf.exists() else []}
 CACHE = {}
 SESSIONS = {}
 
 
 def find(name):
-    for p in (UPLOADS / f"{name}.csv", ROOT / "data" / "raw" / f"{name}.csv"):
+    for d, _ in DATA_DIRS:
+        p = d / f"{name}.csv"
         if p.exists():
             return p
     raise HTTPException(404, f"no recording named {name}")
@@ -73,7 +128,7 @@ def find(name):
 @app.get("/api/trips")
 def trips():
     seen, out = set(), []
-    for d, tag in ((UPLOADS, "upload"), (ROOT / "data" / "raw", "local")):
+    for d, tag in DATA_DIRS:
         for p in sorted(d.glob("*.csv")):
             if p.stem in seen:
                 continue
@@ -308,6 +363,9 @@ app.mount("/static", StaticFiles(directory=Path(__file__).parent / "static"),
           name="static")
 
 if __name__ == "__main__":
+    import os
     import uvicorn
-    print("  open http://127.0.0.1:8000")
-    uvicorn.run(app, host="127.0.0.1", port=8000, log_level="warning")
+    host = os.environ.get("HOST", "127.0.0.1")
+    port = int(os.environ.get("PORT", 8000))
+    print(f"  open http://{host}:{port}")
+    uvicorn.run(app, host=host, port=port, log_level="warning")

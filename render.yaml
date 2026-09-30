@@ -1,0 +1,15 @@
+# Render Blueprint: New + > Blueprint > pick this repo. Deploys the IDR replay
+# service so anyone with the URL can pick a recording and watch the engine drive it.
+services:
+  - type: web
+    name: idr-replay
+    runtime: python
+    plan: free
+    buildCommand: pip install -r server/requirements-render.txt && python server/fetch_data.py
+    startCommand: uvicorn server:app --app-dir server --host 0.0.0.0 --port $PORT
+    healthCheckPath: /api/trips
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      - key: DATA_FOLDER_URL
+        value: https://drive.google.com/drive/folders/1t_RECqwdEEg5rAYrYMfqriabc7RVvW0l

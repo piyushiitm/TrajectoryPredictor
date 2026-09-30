@@ -4,6 +4,15 @@ SIH 2026, PS **SIH26168** — AI-ML Intelligent Dead Reckoning for GNSS-denied
 navigation. Every number here was measured in this repository and is
 reproducible with the command given.
 
+> **How to read this log.** Sections 1–10 are **phase 1**, run on IO-VNBD before
+> the team's own recordings existed. Sections 11–14 are **phase 2**, on the 28
+> recordings in `data/MANIFEST.csv`, and they overturn several phase-1
+> conclusions — heading *can* be improved by a model (§11.3), the compass helps
+> on long outages (§11.4), and map matching and the Android app now exist.
+> Where the two disagree, phase 2 is current; phase-1 text is kept because the
+> reasons behind each reversal are part of the record. Superseded statements
+> are marked **[superseded → §n]**.
+
 ---
 
 ## 1. Executive summary
@@ -147,7 +156,7 @@ whose correlation with the target is zero.
 At 9 s GPS updates a 60 s window yields only ~6 fit points. 300 s is the sweet
 spot. This one change took heading-limited drift from 25.2% to 8.1%.
 
-### 5.3 Heading cannot be improved by a model
+### 5.3 Heading cannot be improved by a model **[superseded → §11.3]**
 - Predicting the calibration **residual**: R² **−0.006** on held-out sessions
   (worse than the mean), −0.3% change. It is noise.
 - Predicting **angular displacement** directly: 9.51°/32.76°/40.82° for
@@ -158,7 +167,7 @@ spot. This one change took heading-limited drift from 25.2% to 8.1%.
 recovers axis order, scale, bias and sign, nothing remains but noise. Use exact
 mathematics where the physics is known; use learning only where it isn't.
 
-### 5.4 Compass fusion made it worse
+### 5.4 Compass fusion made it worse **[superseded → §11.4]**
 Complementary-filtering the drift-free compass into the gyro heading: 8.5° →
 30.7° at 30 s. The magnetometer is too disturbed inside a vehicle.
 
@@ -285,6 +294,8 @@ trip2) that did not survive 3 seeds (−5.1%). Always average seeds here.
 6. **The Uncategorised IO-VNBD branch duplicates the Categorised one** — same 72
    recordings flattened. Using both puts one drive in train *and* test.
 
+Phase-2 bugs (§13) continue this list: 7–12.
+
 ---
 
 ## 9. Honest limitations
@@ -298,15 +309,18 @@ trip2) that did not survive 3 seeds (−5.1%). Always average seeds here.
 - **No training pool beats hold-speed on all three trips.** trip1 (10.4 m/s) and
   trip2/trip3 (~6 m/s) cannot be served by one training distribution, because the
   model is steering a *prior* rather than inferring speed from the IMU.
-- **Map matching is unbuilt.** The PS names it explicitly, and it is the
+- **[superseded → §11.6]** **Map matching is unbuilt.** The PS names it explicitly, and it is the
   strongest remaining lever — it constrains cross-track error, roughly half the
   remaining budget, and needs no new data.
-- **The mobile application is unbuilt.** Models export to TFLite; the Android app
+- **[superseded → §11.7]** **The mobile application is unbuilt.** Models export to TFLite; the Android app
   does not exist.
 
 ---
 
-## 10. Reproducing
+## 10. Reproducing (phase 1)
+
+These scripts belong to the phase-1 layout and are no longer in the tree; the
+current commands are in §14.
 
 ```bash
 source venv/bin/activate
@@ -324,4 +338,182 @@ python src/idr_navigate.py --input "$IOV" --model models/speed_best \
 python src/check_heading.py --input "$IOV"        # heading observability
 python src/idr_budget.py    --input "$IOV" --model models/speed_best   # error budget
 python src/speed_bench.py   --input data/processed/speed2.csv          # learner sweep
+```
+
+---
+
+## 11. Phase 2 — the team's own recordings
+
+28 recordings (`data/MANIFEST.csv`, ~1.1 GB, not in git): 25 training sessions
+captured on up to three phones at once (`sNN_mount`, `sNN_pocket`, `sNN_hand`),
+so placement is separable from route and traffic, plus 3 held out of every pool
+(`t01_mount`, `t02_mount`, and `t03_other` — a different phone, mount and
+vehicle). **Every score below is leave-one-recording-out (LORO)**: the model is
+retrained without the recording it is scored on.
+
+### 11.1 Positional drift, full pipeline — `results/loro_drift.log`
+
+Median over 9 held-out recordings; model speed, gyro/compass fusion, real
+outage windows, no GNSS after the anchor.
+
+| outage | gyro | compass | **fused** | hold speed | recordings < 10% |
+|--------|------|---------|-----------|------------|------------------|
+| 10 s   | 13.4% | 15.2% | **13.8%** | 15.8% | 2 / 9 |
+| 30 s   | 19.2% | 17.0% | **16.1%** | 25.2% | 1 / 9 |
+| 60 s   | 21.7% | 17.0% | **16.8%** | 32.2% | 0 / 9 |
+
+Per recording at 10 s the spread is 9.1% (`mount_d`) to 20.4% (`pocket_b`); at
+60 s one mounted ride reaches 38.1% (`mount_i`). **The spread is set by how the
+phone is held, not by the model** — the app README measures 1.4°/s of mount
+wobble giving 8.3% drift against 5.7°/s giving 39.3%. The <10% target is met on
+good rides and missed on poor ones.
+
+### 11.2 Head × pool matrix — `results/matrix_all.log`
+
+Four heads, five training pools, each scored three ways: LORO (the honest
+number), held-out tails, and trip1 (in no pool). Gain is against the matching
+baseline (hold-speed for speed heads, the raw source for heading heads);
+`gap` = tails − LORO, i.e. how much a model memorised its rides.
+
+| head | NEW (12) | MOUNT (9) | HAND (4) | ALL (25) | ALL+IO |
+|------|---------|-----------|----------|----------|--------|
+| speed          | +40.7 | +39.9 | +38.7 | +34.9 | **+39.3** (gap 9.2) |
+| velocity vector| +14.8 | +18.1 | +13.8 | +15.7 | +17.1 |
+| gyro correction| +21.9 | **−12.3** | +11.5 | **+17.2** (gap 4.0) | — |
+| compass filter | −48.5 (gap 51.0) | −13.3 | −8.4 | −6.2 | — |
+
+- The **speed** head holds up everywhere; adding IO-VNBD (ALL+IO) is what buys
+  transfer — trip1 +25.6% against +13.0% for ALL. Ships as `speed_general`.
+- The **gyro correction** fails on the MOUNT-only pool and passes on mixed
+  pools: placement diversity, not volume, is what it needs. Ships (ALL).
+- The **compass filter** looks positive on tails (+2.6 to +12.0) and is negative
+  on every LORO — gaps up to 51 points. It had memorised where particular
+  bridges and parked vehicles distort the field. **Not shipped.** This one table
+  is why every headline number in the project is LORO.
+
+### 11.3 Heading *can* be improved by a model (reverses §5.3)
+
+§5.3 predicted the *calibration residual* and got R² −0.006. The fix was the
+target: predict the **total heading error accumulated since the anchor**,
+`true − dh_gyro`, from 96 inputs (the 90 window statistics, v0, elapsed,
+dh_gyro, dh_fused, |dh_fused|, current yaw rate), and apply it once as an
+offset on the gyro heading.
+
+- LORO +17.2% (ALL pool, gap 4.0); the shipped retrain reports +21.3% against
+  the raw gyro (README).
+- trip1, never trained on: 24.73° → 20.75° (+16.1%) — `results/v3_train.log`.
+- The same head trained against the **fused** residual scored −7.1% LORO: once
+  the compass has removed what is learnable, the remainder is noise. Only the
+  gyro variant ships.
+- A residual head on the fused estimate (`results/head_correct.log`) also lost:
+  −3.6% on tails overall, best on only 1 of 14 held-out tails (and on trip1
+  by 0.6%).
+
+### 11.4 Compass fusion: loses short, wins long (refines §5.4)
+
+§5.4 saw the compass hurt at 30 s. With hard-iron correction, a 15%
+field-magnitude gate (spikes read 18.5 µT/s against 0.72 µT/s normally) and a
+fusion time constant τ that shrinks from 10 s to 2 s as the outage runs on:
+
+- Under ~10 s the gyro has not drifted yet and the compass only adds noise —
+  gyro wins at 10 s in §11.1 (13.4% vs 13.8% fused).
+- From 30 s it wins: 16.1% fused vs 19.2% gyro at 30 s, 16.8% vs 21.7% at 60 s.
+- On long single-anchor runs it is decisive: one 9.4 km run went 96% (gyro) →
+  9.1% (fused) (app README); a 6.2 km full trip in `results/compass_pipeline.log`
+  went 76.1% → 38.7%.
+- A learned compass filter on top (`mag_f`, `fused_f` in that log) never beat
+  the plain fusion — consistent with §11.2.
+
+### 11.5 Velocity-vector head: along-track works, lateral never does
+
+Eleven formulations predicted the full 2-D velocity (forward + sideways)
+instead of speed. It is positive in every pool (+13.8% to +18.1%, §11.2), but
+`analyse_velocity_vector.py` splits it: the **along-track** component correlates
+0.74 with truth; the **lateral** one +0.077, flat across a 20× range of data
+volume (386k bike samples to 614k IO-VNBD samples with dense CAN truth). More
+data does not help — the turn is not observable from the IMU window. It stays an
+ongoing experiment; heading comes from gyro + compass + the correction head.
+
+### 11.6 Map matching: built, and off by default
+
+HMM (Newson & Krumm), HMM with road topology, and a learned matcher were all
+built. None beat plain dead reckoning: at 10 s the DR error (3.2 m) is already
+finer than the road network's ~8 m granularity, so snapping *adds* error
+(3.2 → 5.7 m); at 60 s (~63 m) the point is often nearer the wrong road among
+streets 100–200 m apart (63.2 m vs 62.7 m). Measured gain ~2 m in 50 m. The
+matcher ships trust-gated and off: it refuses to run until calibration R² ≥ 0.8,
+and is worth enabling once 60 s drift is under ~20–30 m.
+
+### 11.7 The Android app exists
+
+`app/` — IDR Navigator: both speed heads (tuned / general) and the heading head
+on-device as TFLite (<300 KB each; export parity 1.8×10⁻⁷ speed, 3.7×10⁻⁹
+heading), Outage/Restore to simulate a blackout while GNSS keeps arriving for
+comparison, GYRO / MAG / FUSED / ML_GYRO heading modes, a live mount-quality
+check, an offline road network (231,692 points) and in-app trip recording.
+
+---
+
+## 12. Honest limitations (phase 2)
+
+- **<10% is met on good rides only** — 2 of 9 held-out recordings at 10 s; the
+  median is 13.8%. Mounting dominates (§11.1).
+- **Turns are the weak point.** Turns drift ~2× straight running, and the
+  lateral velocity component is unobservable (§11.5).
+- **The gyro correction needs placement-diverse training** — it fails on a
+  mount-only pool (§11.2).
+- **Map matching gives nothing yet** at current drift levels (§11.6).
+- **Thin in-range data remains** — the phase-1 constraint (§7) still holds for
+  public data; own recordings are the lever.
+
+---
+
+## 13. Bugs found and fixed in phase 2 (do not reintroduce)
+
+7. **App: ML heading correction applied cumulatively.** The head predicts the
+   *total* error since the anchor; `IdrEngine` added it into `drHeading` every
+   0.5 s, re-applying the whole correction twice a second. In `Hdg: ML_GYRO` the
+   heading spun (2,104° in a 60 s simulation) and every dead-reckoned marker
+   circled on the spot while AI speed kept updating. Fix: keep the integrated
+   heading separate and apply the latest correction once, clipped to ±0.5 rad —
+   exactly as the replay server does.
+8. **App: `YawCalibrator.solve` read the wrong column.** After Gauss–Jordan it
+   returned `m[i][i+1] / m[i][i]` instead of the augmented column
+   `m[i][n] / m[i][i]`, so all three gyro weights came out 0 and only the bias
+   was used. Simulated recovery went from R² −0.001 to 1.000.
+9. **Replay server pointed at dead paths** — `results/models/v3/*` `.keras`
+   checkpoints that are gitignored, and `<root>/src` instead of `server/src`.
+   It now loads the shipped `.tflite` files under `models/`.
+10. **`idr_core.py` imported itself through a package path**
+    (`TrajectoryPredictor.server.src…`) that only exists on one laptop.
+11. **`config.ROOT` was one level too shallow** after `config.py` moved into
+    `server/src/`.
+12. **Drive fetch broke on gdown 6**, which removed `remaining_ok`; the call
+    raised, was caught, and deploys came up with no recordings. The fetch now
+    logs every step to `data/fetch_log.txt`, shown at `/api/status`.
+
+---
+
+## 14. Reproducing (current)
+
+Run from the repository root. Recordings go in `data/recordings/`
+(`python server/fetch_data.py` pulls them from the shared Drive folder).
+
+```bash
+python -m venv venv && ./venv/bin/pip install -r requirements.txt
+
+# training matrix: 5 pools x 4 heads, LORO + tails + trip1  -> results/matrix_all.log
+./venv/bin/python server/src/run_matrix_all.py
+# full-pipeline positional drift, LORO                     -> results/loro_drift.log
+./venv/bin/python server/src/evaluate_drift_loro.py
+# along-track vs lateral split of the velocity-vector head
+./venv/bin/python server/src/analyse_velocity_vector.py
+# shipped models
+./venv/bin/python server/src/train_speed_general.py
+./venv/bin/python server/src/train_speed_tuned.py
+./venv/bin/python server/src/train_heading_correction.py
+
+# replay service (only needs a TFLite runtime)
+./venv/bin/pip install -r server/requirements-render.txt
+./venv/bin/python server/server.py          # http://127.0.0.1:8000
 ```

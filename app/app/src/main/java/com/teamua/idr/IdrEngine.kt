@@ -152,6 +152,16 @@ class IdrEngine(ctx: Context) {
     private var lastMagHeading: Double? = null
     private var dhGyro = 0.0          // heading change since the anchor, gyro only
     private var lastCorrect = -1.0
+    /** Heading from integration + compass only, before the learned correction. */
+    private var intHeading = 0.0
+    /**
+     * Latest learned correction, radians. The head predicts the TOTAL heading
+     * error accumulated since the anchor (true - dh_gyro), so it is applied as an
+     * offset on top of [intHeading] -- never added into it. Adding it every 0.5 s
+     * re-applied the whole error twice a second and spun the heading, which made
+     * every dead-reckoned marker circle on the spot in ML_GYRO mode.
+     */
+    private var mlCorr = 0.0
 
     private fun wrapPi(x: Double): Double {
         var v = x
@@ -170,7 +180,7 @@ class IdrEngine(ctx: Context) {
         if (!outage) {                                  // track GPS exactly
             drLat = lat; drLon = lon; holdLat = lat; holdLon = lon
             refLat = lat; refLon = lon
-            drHeading = gpsBearing; drSpeed = speed
+            drHeading = gpsBearing; intHeading = gpsBearing; drSpeed = speed
         }
     }
 
@@ -185,6 +195,7 @@ class IdrEngine(ctx: Context) {
         trkLat.clear(); trkLon.clear(); trkHdg.clear(); trkEl.clear()
         lastMatch = -1.0; matchOk = false; matchInfo = ""
         dhGyro = 0.0; lastCorrect = -1.0; lastPredict = -1.0; modelOk = true
+        mlCorr = 0.0; intHeading = gpsBearing
         mmLat = gpsLat; mmLon = gpsLon
         anchorSpeed = gpsSpeed
         anchorHeading = gpsBearing
@@ -215,7 +226,7 @@ class IdrEngine(ctx: Context) {
 
         elapsed = s.t - outageStart
         val yawRate = calib.yawRate(s.gx, s.gy, s.gz)
-        drHeading += yawRate * dt
+        intHeading += yawRate * dt
         dhGyro += yawRate * dt
         // complementary fusion: the gyro supplies the short-term shape, the
         // compass the absolute reference. tau shrinks as the outage runs on, so
@@ -225,11 +236,11 @@ class IdrEngine(ctx: Context) {
         if (wantsCompass && mh != null && magOk) {
             if (headingMode == Heading.MAG) {
                 // compass alone: nothing is integrated, so nothing drifts
-                drHeading = mh + magOffset
+                intHeading = mh + magOffset
             } else {
                 val tau = compass.tauFor(elapsed)
                 val alpha = dt / (tau + dt)
-                drHeading += alpha * wrapPi(mh + magOffset - drHeading)
+                intHeading += alpha * wrapPi(mh + magOffset - intHeading)
             }
         }
         // learned correction, applied at 2 Hz on top of whatever produced the
@@ -243,11 +254,13 @@ class IdrEngine(ctx: Context) {
             lastCorrect = s.t
             val f = buildFeatures()
             if (f != null) {
-                val dhFused = wrapPi(drHeading - anchorHeading)
+                val dhFused = wrapPi(intHeading - anchorHeading)
                 val c = headModel.correct(f, anchorSpeed, elapsed, dhGyro, dhFused, yawRate)
-                if (c.isFinite() && Math.abs(c) < 1.0) drHeading += c
+                // same clip as the replay server (+-0.5 rad); non-finite is ignored
+                if (c.isFinite()) mlCorr = c.coerceIn(-0.5, 0.5)
             }
         }
+        drHeading = if (headingMode == Heading.ML_GYRO) intHeading + mlCorr else intHeading
 
         // the model runs at 2 Hz; between updates the last speed is held
         if (filled >= BUF && (lastPredict < 0 || s.t - lastPredict >= 0.5)) {
